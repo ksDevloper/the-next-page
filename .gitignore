@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+ENV/
+.env
+.idea/
+.vscode/
+
+# Keep the repository under GitHub's 100MB limit:
+# Use books_final.csv.gz (54MB) which app.py automatically detects and loads
+books_final.csv
+books.db

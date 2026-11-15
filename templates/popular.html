@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Popular Books — The Next Page{% endblock %}
+
+{% block content %}
+<!-- Page Intro -->
+<section class="page-intro">
+  <div class="editorial-tag">Top 50 Books</div>
+  <h1 class="page-title">Most Popular Books</h1>
+  <p class="page-desc">
+    Discover 50 of the most loved and highest-rated books. Pick any book to see its summary or find similar books to read next.
+  </p>
+</section>
+
+<!-- Filter & Sort Controls Bar -->
+<section class="controls-bar">
+  <!-- Genre Filter Pills -->
+  <div class="filter-pills" id="genreFilterGroup">
+    <button class="filter-pill active" data-filter="all">All Books</button>
+    <button class="filter-pill" data-filter="Fantasy">Fantasy</button>
+    <button class="filter-pill" data-filter="Young Adult">Young Adult</button>
+    <button class="filter-pill" data-filter="Fiction">Fiction</button>
+    <button class="filter-pill" data-filter="Romance">Romance</button>
+    <button class="filter-pill" data-filter="Science Fiction">Sci-Fi</button>
+    <button class="filter-pill" data-filter="Historical">Historical</button>
+    <button class="filter-pill" data-filter="Classics">Classics</button>
+    <button class="filter-pill" data-filter="Mystery">Mystery</button>
+  </div>
+
+  <!-- Sort & Search -->
+  <div class="sort-and-search">
+    <select id="sortSelect" class="select-control" onchange="applySorting()">
+      <option value="rating-desc">Sort by: Highest Rating</option>
+      <option value="reviews-desc">Sort by: Most Reviews</option>
+      <option value="ratings-desc">Sort by: Most Readers</option>
+      <option value="title-asc">Sort by: Title (A – Z)</option>
+    </select>
+
+    <div class="filter-search-box">
+      <span class="filter-search-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </span>
+      <input type="text" id="popularSearchInput" placeholder="Search by title or author..." oninput="applyTitleFilter()">
+    </div>
+  </div>
+</section>
+
+<!-- Books Grid (Top 50) -->
+<section class="books-grid" id="popularBooksGrid">
+  {% for book in books %}
+  <article class="book-card" 
+           data-title="{{ book.title | lower }}" 
+           data-author="{{ book.author | lower }}"
+           data-genre="{{ book.genre | join(',') | lower }}"
+           data-rating="{{ book.rating }}"
+           data-reviews="{{ book.reviews }}"
+           data-totalratings="{{ book.totalratings }}">
+    
+    <!-- Cover Thumbnail -->
+    <div class="book-cover-wrap">
+      {% if book.image_url and book.image_url != 'N/A' %}
+      <img src="{{ book.image_url }}" 
+           alt="{{ book.title }} Cover" 
+           class="book-cover-img"
+           loading="lazy"
+           onerror="handleImageError(this, '{{ book.title | escape }}', '{{ book.author | escape }}')">
+      {% else %}
+      <div class="book-cover-fallback">
+        <div class="fallback-title">{{ book.title }}</div>
+        <div class="fallback-author">{{ book.author }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Metadata & Details -->
+    <div class="book-info">
+      <div class="book-genre-tags">
+        {% for g in book.genre[:2] %}
+        <span class="genre-tag">{{ g }}</span>
+        {% endfor %}
+      </div>
+
+      <h2 class="book-title" title="{{ book.title }}">{{ book.title }}</h2>
+      <div class="book-author">by {{ book.author }}</div>
+
+      <div class="book-meta-bar">
+        <div class="rating-badge">
+          <span class="rating-star">★</span>
+          <span>{{ book.rating }}</span>
+        </div>
+        <div class="reviews-count">
+          {{ "{:,}".format(book.totalratings) }} readers
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button type="button" 
+                class="btn-secondary" 
+                onclick="openBookSummary('{{ book.title | escape }}', '{{ book.author | escape }}', '{{ book.rating }}', '{{ '{:,}'.format(book.totalratings) }} readers ({{ '{:,}'.format(book.reviews) }} reviews)', '{{ book.isbn }}', {{ book.desc | tojson }})">
+          Summary
+        </button>
+        <a href="{{ url_for('recommend', q=book.title) }}" 
+           class="btn-primary" 
+           title="Find books like this">
+          <span>Similar Books</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+
+<!-- No Results Filter Message -->
+<div id="noResultsNotice" class="empty-state" style="display: none; margin-top: 2rem;">
+  <div class="empty-icon">📖</div>
+  <h3 class="empty-title">No books found</h3>
+  <p class="empty-desc">Try picking another category or clear your search.</p>
+</div>
+{% endblock %}

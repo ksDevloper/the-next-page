@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Book Recommendations — The Next Page{% endblock %}
+
+{% block content %}
+<!-- Search Header -->
+<section class="recommender-hero">
+  <div class="editorial-tag">Smart Book Finder</div>
+  <h1 class="page-title">What Should You Read Next?</h1>
+  <p class="page-desc">
+    Enter any book you recently read and enjoyed. We will find 5 great books you should read next based on similar stories, authors, and themes.
+  </p>
+
+  <div class="search-container">
+    <form action="{{ url_for('recommend') }}" method="GET" class="search-form" id="searchForm" autocomplete="off">
+      <div class="search-input-wrap">
+        <span class="search-icon-hero">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
+        <input type="text" 
+               name="q" 
+               id="bookQueryInput" 
+               class="search-input" 
+               placeholder="Type a book title (e.g. A Game of Thrones, Harry Potter, Godaan)..." 
+               value="{{ query }}"
+               required
+               autofocus>
+        
+        <!-- Live Autocomplete Dropdown -->
+        <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+      </div>
+      <button type="submit" class="btn-search-hero">
+        <span>Get Recommendations</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <!-- Sample Suggestions -->
+  <div class="sample-suggestions">
+    <span class="chip-label">Try one of these:</span>
+    {% for sample in samples %}
+    <button type="button" class="chip-btn" onclick="selectSample('{{ sample | escape }}')">{{ sample }}</button>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Error / Not Found Message -->
+{% if error_message %}
+<div class="notice-box">
+  <h3 class="notice-title">Book Not Found</h3>
+  <p class="notice-text">
+    {{ error_message }}
+  </p>
+</div>
+{% endif %}
+
+<!-- Recommendation Results -->
+{% if result %}
+<!-- Anchor / Matched Book Card -->
+<section class="match-anchor-card">
+  <div class="anchor-seal">You Searched For</div>
+  
+  {% if result.search_match_details.image_url and result.search_match_details.image_url != 'N/A' %}
+  <img src="{{ result.search_match_details.image_url }}" 
+       alt="{{ result.search_match }} cover" 
+       class="anchor-cover"
+       loading="lazy"
+       onerror="handleImageError(this, '{{ result.search_match | escape }}', '{{ result.search_match_details.author | escape }}')">
+  {% else %}
+  <div class="book-cover-fallback" style="width: 140px; height: 200px;">
+    <div class="fallback-title">{{ result.search_match }}</div>
+    <div class="fallback-author">{{ result.search_match_details.author }}</div>
+  </div>
+  {% endif %}
+
+  <div class="anchor-content">
+    <div class="genre-tag" style="align-self: flex-start; margin-bottom: 0.5rem;">
+      {{ result.search_match_details.genre.split(',')[0] if result.search_match_details.genre else 'General' }}
+    </div>
+    <h2 class="anchor-title">{{ result.search_match }}</h2>
+    <div class="anchor-author">by {{ result.search_match_details.author }}</div>
+    
+    <p class="anchor-desc">{{ result.search_match_details.desc }}</p>
+    
+    <div class="anchor-meta">
+      {% if result.search_match_details.rating != 'N/A' %}
+      <div>★ <strong>{{ result.search_match_details.rating }}</strong> rating</div>
+      {% endif %}
+      {% if result.search_match_details.isbn %}
+      <div>ISBN: <strong>{{ result.search_match_details.isbn }}</strong></div>
+      {% endif %}
+      <div>Searched across <strong>90,000+ books</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- Top 5 Recommendations Stack -->
+<section class="recommendations-container">
+  <div class="recommendations-header">
+    <h2 class="recommendations-title">5 Books Recommended For You</h2>
+    <div class="engine-badge">Top Recommendations</div>
+  </div>
+
+  <div class="companions-stack">
+    {% set numerals = ["1", "2", "3", "4", "5"] %}
+    {% for rec in result.recommendations %}
+    <article class="companion-card">
+      <!-- Item Number Ribbon -->
+      <div class="spine-numeral">{{ numerals[loop.index0] }}</div>
+
+      <!-- Book Cover -->
+      {% if rec.image_url and rec.image_url != 'N/A' %}
+      <img src="{{ rec.image_url }}" 
+           alt="{{ rec.title }} cover" 
+           class="companion-cover"
+           loading="lazy"
+           onerror="handleImageError(this, '{{ rec.title | escape }}', '{{ rec.author | escape }}')">
+      {% else %}
+      <div class="book-cover-fallback" style="width: 110px; height: 165px; padding: 0.8rem;">
+        <div class="fallback-title" style="font-size: 0.85rem;">{{ rec.title }}</div>
+        <div class="fallback-author" style="font-size: 0.65rem;">{{ rec.author }}</div>
+      </div>
+      {% endif %}
+
+      <!-- Card Body -->
+      <div class="companion-body">
+        <div class="companion-top-row">
+          <div class="genre-tag">{{ rec.genre.split(',')[0] if rec.genre else 'Fiction' }}</div>
+          <div class="similarity-badge" title="Matched by similar genres, themes, and author style">
+            <span>{{ rec.similarity }} match</span>
+          </div>
+        </div>
+
+        <h3 class="companion-title">{{ rec.title }}</h3>
+        <div class="companion-author">by {{ rec.author }}</div>
+        
+        <p class="companion-desc">{{ rec.desc }}</p>
+
+        <div class="companion-footer">
+          <div class="companion-meta">
+            {% if rec.rating != 'N/A' %}
+            <div class="rating-badge">
+              <span class="rating-star">★</span>
+              <span>{{ rec.rating }}</span>
+            </div>
+            {% endif %}
+            {% if rec.isbn %}
+            <div class="reviews-count">ISBN: {{ rec.isbn }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Single clean, active button: Find similar books -->
+          <a href="{{ url_for('recommend', q=rec.title) }}" 
+             class="btn-primary" 
+             style="padding: 0.5rem 1rem; font-size: 0.82rem;"
+             title="Get recommendations based on this book">
+            <span>Find Books Like This</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{% elif not error_message %}
+<!-- Initial Empty State -->
+<div class="empty-state">
+  <div class="empty-icon">📖</div>
+  <h2 class="empty-title">Ready to find your next favorite book?</h2>
+  <p class="empty-desc">
+    Type a book title above or click one of the suggested titles to see 5 great recommendations.
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}
