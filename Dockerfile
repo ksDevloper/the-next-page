@@ -26,5 +26,5 @@ COPY --chown=user:user . $HOME/app
 EXPOSE 7860
 ENV PORT=7860
 
-# Run Flask application with Gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:7860", "--workers", "1", "--timeout", "180", "app:app"]
+# Run Flask application with Gunicorn (1 worker + 4 threads to prevent duplicate memory and timeouts)
+CMD ["gunicorn", "-b", "0.0.0.0:7860", "--workers", "1", "--threads", "4", "--timeout", "300", "app:app"]
